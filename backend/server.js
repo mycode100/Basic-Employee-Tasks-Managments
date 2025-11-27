@@ -1,60 +1,60 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const connectDB = require('./config/db');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const connectDB = require("./config/db");
 
-// Initialize app
 const app = express();
 
-// -------------------------------------------
-// CONNECT TO MONGODB
-// -------------------------------------------
-connectDB().catch((err) => {
-  console.error("❌ Failed to connect to MongoDB on startup:", err.message);
-});
+// CONNECT MONGODB
+connectDB();
 
-// -------------------------------------------
-// MIDDLEWARE
-// -------------------------------------------
+// ALLOWED ORIGINS
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://basic-employee-tasks-managments-fro.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:5174"
+];
 
-// Allow frontend + Railway/live domains
+// FIXED CORS
 app.use(
   cors({
-    origin: [
-      process.env.FRONTEND_URL,
-      "http://localhost:5173",
-      "https://localhost:5173"
-    ],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // Postman, mobile apps
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log("❌ CORS BLOCKED → Origin:", origin);
+      return callback(null, false);
+    },
     credentials: true,
   })
 );
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// -------------------------------------------
 // ROUTES
-// -------------------------------------------
-app.use('/api/employees', require('./routes/employees'));
-app.use('/api/tasks', require('./routes/tasks'));
+app.use("/api/employees", require("./routes/employees"));
+app.use("/api/tasks", require("./routes/tasks"));
 
-// Health check
-app.get('/', (req, res) => {
+// HEALTH CHECK
+app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: 'Employee Task Management API is running',
+    message: "Backend Working on Render 🚀",
     endpoints: {
-      employees: '/api/employees',
-      tasks: '/api/tasks',
+      employees: "/api/employees",
+      tasks: "/api/tasks",
     },
   });
 });
 
-// -------------------------------------------
-// SERVER
-// -------------------------------------------
+// START SERVER
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Frontend Allowed: ${process.env.FRONTEND_URL}`);
+  console.log(`🚀 Server running on ${PORT}`);
+  console.log("🌍 Allowed Origins:", allowedOrigins);
 });
